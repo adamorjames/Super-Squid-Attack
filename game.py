@@ -90,9 +90,6 @@ class Game:
         #You arrive :D
         self.ship=allies.BlackEagle([400,400],self.aliens,self.lasers,self.projectiles,self.drawgroup)
         self.ship.add(self.drawgroup)
-        #The healthbar:
-        self.healthbar=HealthBar((500,500))
-        self.healthbar.add(self.drawgroup)
  
     def HandleEvent(self, event):
         #print event.type

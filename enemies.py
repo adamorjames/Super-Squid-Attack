@@ -26,13 +26,9 @@ import random
 import pygame
 from pygame.locals import *
 
-#Comes from:http://eli.thegreenplace.net/2009/02/13/writing-a-game-in-py
-#thon-with-pygame-part-iv/
-#Thanks to Eli Bendersky for the code
-from utils import Timer
-
-import classes as c1
+from utils import *
 from const import *
+import classes as c1
 import weapons
 import allies
 
@@ -40,97 +36,74 @@ pygame.init()
 
 
 
-class EnemyShip(c1.Ship):
-    def __init__(self,spos,health,speed,vector):
+class EnemyShip(c1.MySprite):
+    def __init__(self,anim,spos,vector,health,speed):
         self._dying = False
         self.speed=speed
-        c1.Ship.__init__(self,spos,health,vector)
+        c1.MySprite.__init__(self,anim,spos,vector)
     
     def die(self):
         self.kill()
         
-    def update(self):
-        self.rect=self.rect.move(self.vector)
-        #Watch out for the edges
-        if self.rect.right > 800:self.vector[0]=-self.vector[0]
-        elif self.rect.left < 0:self.vector[0]=-self.vector[0]
+    def update(self,ticks):
+        c1.MySprite.update(self,ticks)
             
             
 class Squid(EnemyShip):
-    normimage=pygame.image.load('images/enemies/squid/squid.png')
-    image=normimage
-    attack_imgs=[pygame.image.load('images/enemies/squid/squid_attack%d.png'%i) for i in range(1,5)]
+    image,rect=load_image('images/enemies/squid/squid.png')
+    normal=c1.Animation(image,rect,57,10000,[0,0])
+    image,rect=load_image('images/enemies/squid/squid-attack.png')
+    attack_anim=(image,rect,57,100,[0,0],False,True)
+
     def __init__(self,spos):
         speed=4
         health=50
         vector=[speed,0]
-        self._attacking=False
-        self._anim_index=0
-        self.timer=Timer(20,self.change_anim)
-        EnemyShip.__init__(self,spos,health,speed,vector)
+        anim=self.normal
+        self.attacking=False
+        EnemyShip.__init__(self,anim,spos,vector,health,speed,)
+
+    def update(self,ticks):
+        EnemyShip.update(self,ticks)
+        self.moverel(self.vector)
         
-    def update(self):
-        self.rect=self.rect.move(self.vector)
-        if self.rect.right > 800:self.vector[0]=-self.vector[0]
+        #Watch out for the edges
+        if self.rect.right > 600:self.vector[0]=-self.vector[0]
         elif self.rect.left < 0:self.vector[0]=-self.vector[0]
-        if random.randint(1,15) == 5:
+        
+        if not self.attacking and random.randint(1,30) == 5:
             self.attack()
-        self.timer.update(6)
-        
-    def change_anim(self):
-        if not self._attacking:return
-        if self._anim_index > len(self.attack_imgs)-1:
-            self._attacking=False
-            self.image=self.normimage
-            self._anim_index=0
-        else:
-            position=self.rect.topleft
-            self.image=self.attack_imgs[self._anim_index]
-            self.rect=self.image.get_rect()
-            self.rect.topleft=position
-            self._anim_index+=1
-
-    def attack(self):
-        self._attacking=True
-        
-class Button(EnemyShip):
-    images=[pygame.image.load('images/enemies/buttons/button_ON_anim%d.png'%i) for i in range(0,13)]
-    bomb_images=[pygame.image.load('images/explosions/explosion_BOMB_animation_%s.png'%str(i).zfill(4)) for i in range(0,30)]
-    def __init__(self,spos):
-        self.index=0
-        self.image=self.images[self.index]
-        self.dir=UP
-        speed=3
-        self.timer=Timer(20,self.change_anim)
-        health=1
-        vector=[speed,0]
-        EnemyShip.__init__(self,spos,health,speed,vector)
-        
-    def change_anim(self):
-        if self.dir == UP:
-            if self.index > len(self.images)-2:
-                if self._dying:self.kill()
-                self.dir=DOWN
-                self.index-=1
-            else:self.index+=1
             
-        else:
-            self.index-=1
-            if self.index < 0:
-                self.index=0
-                self.dir = UP
-                
-    def die(self):
-        self.images=self.bomb_images
-        self.vector[0]=0
-        self.index=0
-        self._dying=1
+        if self.attacking:
+            print "Attacking"
+            if self.anim.dead:
+                print "Finished"
+                self.attacking=False
+                self.switch_anim(self.normal)
+        
+    def attack(self):
+        self.attacking=True
+        self.switch_anim(c1.Animation(*self.attack_anim))
+        
 
-    def update(self,ticks=8):
-        self.rect=self.rect.move(self.vector)
-        if self.rect.right > 800:
-            self.vector[0]=-self.vector[0]
-        if self.rect.left < 0:
-            self.vector[0]=-self.vector[0]
-        self.timer.update(ticks)
-        self.image=self.images[self.index]
+
+if __name__ == "__main__":
+    print "Testing"
+    pygame.init()
+    display=pygame.display.set_mode((600,200))
+    background,_=load_image('images/background.png')
+    display.blit(background,(0,0))
+    pygame.display.flip()
+    
+    dg=c1.DrawGroup()
+    baddies=Squid([0,0])
+    baddies.add(dg)
+        
+    x=pygame.time.Clock()
+    
+    while 1:
+        ticks=x.tick(40)
+        dg.clear(display,background)
+        dg.update(ticks)
+        dg.draw(display)
+        pygame.display.flip()

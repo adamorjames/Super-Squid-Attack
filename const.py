@@ -20,6 +20,8 @@
 #       MA 02110-1301, USA.
 
 
+
+import pygame
 #Some useful constants
 
 #Directions
@@ -32,3 +34,4 @@ LEFT=3
 LASER=0
 ROCKET=1
 GUIDED_ROCKET=2
+
