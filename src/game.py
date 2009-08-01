@@ -45,7 +45,7 @@ pygame.init()
 ########################################################################
 
 class Game:
-    def __init__(self,height=600,width=480):
+    def __init__(self,width=600,height=400):
         self._running = True
         self.display = None
         self.height=height
@@ -53,7 +53,7 @@ class Game:
 
     def Init(self):
         #initialize our display
-        self.display = pygame.display.set_mode((self.height,self.width))
+        self.display = pygame.display.set_mode((self.width,self.height))
         #The game is now running
         self._running = True
         #We're not interested in these
@@ -74,12 +74,12 @@ class Game:
         self.enemies=[]
         #Draw the first aliens to the screen
         for i in range(6):
-            self.enemies.append(enemies.Squid([i*25,60]))
+            self.enemies.append(enemies.Squid([i*50,60]))
             self.enemies[-1].add(self.aliengroup)
             self.enemies[-1].add(self.drawgroup)
             
         #You arrive :D
-        self.ship=allies.BlackEagle([400,400])
+        self.ship=allies.BlackEagle([self.width/4,self.height/2])
         self.ship.add(self.drawgroup)
  
     def HandleEvent(self, event):

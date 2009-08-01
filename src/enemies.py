@@ -51,7 +51,7 @@ class EnemyShip(c1.MySprite):
             
 class Squid(EnemyShip):
     image,rect=load_image('images/enemies/squid/squid.png')
-    normal=c1.Animation(image,rect,57,10000,[0,0])
+    normal=(image,rect,57,10000,[0,0])
     image,rect=load_image('images/enemies/squid/squid-attack.png')
     attack_anim=(image,rect,57,100,[0,0],False,True)
 
@@ -59,7 +59,7 @@ class Squid(EnemyShip):
         speed=4
         health=50
         vector=[speed,0]
-        anim=self.normal
+        anim=c1.Animation(*self.normal)
         self.attacking=False
         EnemyShip.__init__(self,anim,spos,vector,health,speed,)
 
@@ -68,7 +68,7 @@ class Squid(EnemyShip):
         self.moverel(self.vector)
         
         #Watch out for the edges
-        if self.rect.right > 480:self.vector[0]=-self.vector[0]
+        if self.rect.right > 600:self.vector[0]=-self.vector[0]
         elif self.rect.left < 0:self.vector[0]=-self.vector[0]
         
         if not self.attacking and random.randint(1,30) == 5:
@@ -77,7 +77,7 @@ class Squid(EnemyShip):
         if self.attacking:
             if self.anim.dead:
                 self.attacking=False
-                self.switch_anim(self.normal)
+                self.switch_anim(c1.Animation(*self.normal))
         
     def attack(self):
         self.attacking=True
@@ -97,7 +97,6 @@ if __name__ == "__main__":
     dg=c1.DrawGroup()
     baddies=Squid([0,0])
     baddies.add(dg)
-    baddies.normal.image=baddies.normal.image.convert_alpha()
         
     x=pygame.time.Clock()
     
