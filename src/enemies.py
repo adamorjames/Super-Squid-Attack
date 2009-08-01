@@ -68,16 +68,14 @@ class Squid(EnemyShip):
         self.moverel(self.vector)
         
         #Watch out for the edges
-        if self.rect.right > 600:self.vector[0]=-self.vector[0]
+        if self.rect.right > 480:self.vector[0]=-self.vector[0]
         elif self.rect.left < 0:self.vector[0]=-self.vector[0]
         
         if not self.attacking and random.randint(1,30) == 5:
             self.attack()
             
         if self.attacking:
-            print "Attacking"
             if self.anim.dead:
-                print "Finished"
                 self.attacking=False
                 self.switch_anim(self.normal)
         
@@ -92,17 +90,21 @@ if __name__ == "__main__":
     pygame.init()
     display=pygame.display.set_mode((600,200))
     background,_=load_image('images/background.png')
+    background=background.convert()
     display.blit(background,(0,0))
     pygame.display.flip()
     
     dg=c1.DrawGroup()
     baddies=Squid([0,0])
     baddies.add(dg)
+    baddies.normal.image=baddies.normal.image.convert_alpha()
         
     x=pygame.time.Clock()
     
     while 1:
+        pygame.event.pump()
         ticks=x.tick(40)
+        print ticks
         dg.clear(display,background)
         dg.update(ticks)
         dg.draw(display)

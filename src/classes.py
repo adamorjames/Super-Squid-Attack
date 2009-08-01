@@ -60,7 +60,7 @@ class DrawGroup(pygame.sprite.Group):
            erase the previous position of all sprites
 
            Clears the area of all sprites with the dirty flag. 
-           The bgd argument should be a Surface which is the same
+           The bgd argument should be a Surface which has the same
            dimensions as the surface."""
 
         for i in self.lostsprites:

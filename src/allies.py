@@ -95,12 +95,12 @@ class BlackEagle(PlayerShip):
 if __name__ == "__main__":
     print "Testing"
     pygame.init()
-    display=pygame.display.set_mode((800,800))
+    display=pygame.display.set_mode((600,100))
     background,_=load_image('images/background.png')
     display.blit(background,(0,0))
     pygame.display.flip()
     
-    ship=BlackEagle([100,400])
+    ship=BlackEagle([100,0])
     dg=c1.DrawGroup(ship)
     x=pygame.time.Clock()
     
@@ -124,7 +124,3 @@ if __name__ == "__main__":
         dg.update(ticks)
         dg.draw(display)
         pygame.display.flip()
-        if ship.rect.top < 0:
-            print "Quitting"
-            pygame.quit()
-            sys.exit()

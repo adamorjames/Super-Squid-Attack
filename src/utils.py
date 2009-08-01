@@ -26,6 +26,8 @@ import time
 import os
 import sys
 
+pygame.display.init()
+pygame.display.set_mode((0,0))
 #Comes from:http://eli.thegreenplace.net/2009/02/13/writing-a-game-in-py
 #thon-with-pygame-part-iv/
 #Thanks to Eli Bendersky for the code
@@ -72,6 +74,7 @@ def load_image(path):
     """Return a loaded image and it's rect"""
     try:
         image = pygame.image.load(path)
+        image = image.convert_alpha()
     except pygame.error, message:
         print 'Cannot load image:', path
         raise SystemExit, message

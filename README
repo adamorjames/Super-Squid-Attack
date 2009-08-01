@@ -1,1 +1,6 @@
-README FIRST
+To play the game:
+
+Go into the src directory and execute game.py
+(If game.py is broken)
+
+you can execute most of the other files and see some tests
