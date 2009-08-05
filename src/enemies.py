@@ -29,82 +29,99 @@ from pygame.locals import *
 from utils import *
 from const import *
 import classes as c1
-import weapons
-import allies
-
-pygame.init()
+#import weapons
+#import allies
 
 
 
-class EnemyShip(c1.MySprite):
-    def __init__(self,anim,spos,vector,health,speed):
+
+class EnemyShip(c1.AnimSprite):
+    def __init__(self, anim, spos, vector, health, speed):
         self._dying = False
-        self.speed=speed
-        c1.MySprite.__init__(self,anim,spos,vector)
+        self.speed = speed
+        self.health = health
+        c1.AnimSprite.__init__(self, anim, spos, vector)
     
     def die(self):
         self.kill()
-        
-    def update(self,ticks):
-        c1.MySprite.update(self,ticks)
-            
+
+    def on_hit(self,shot):
+        if type(shot) == 'list':
+            for i in shot:
+                self.health -= i.damage
+        #else:
+        #    self.health -= shot.damage
+
+    def update(self, ticks):
+        c1.AnimSprite.update(self, ticks)
+
+
+#!!!!!!!!!#####!!!!!!!!!
+import copy
             
 class Squid(EnemyShip):
-    image,rect=load_image('images/enemies/squid/squid.png')
-    normal=(image,rect,57,10000,[0,0])
-    image,rect=load_image('images/enemies/squid/squid-attack.png')
-    attack_anim=(image,rect,57,100,[0,0],False,True)
+    animation = load_anim('images/enemies/squid/squid.anim')
+    normal_anim = (animation, [0,0], 0, 0)
+    attack_anim = (animation, [0,0], 1, 4, True)
 
-    def __init__(self,spos):
-        speed=4
-        health=50
-        vector=[speed,0]
-        anim=c1.Animation(*self.normal)
-        self.attacking=False
-        EnemyShip.__init__(self,anim,spos,vector,health,speed,)
+    def __init__(self, spos):
+        speed = 4
+        health = 50
+        vector = [speed,0]
+        anim = c1.Animation(*self.normal_anim)
+        self.attacking = False
+        self.movetimer = Timer(10, self.moveti)
+        EnemyShip.__init__(self, anim, spos, vector, health, speed)
 
-    def update(self,ticks):
-        EnemyShip.update(self,ticks)
+    def moveti(self):
+        #Watch out for the edges
+        if self.rect.right > 600: self.vector[0] = -self.vector[0]
+        elif self.rect.left < 0: self.vector[0] = -self.vector[0]
+            
         self.moverel(self.vector)
         
-        #Watch out for the edges
-        if self.rect.right > 600:self.vector[0]=-self.vector[0]
-        elif self.rect.left < 0:self.vector[0]=-self.vector[0]
+    def update(self,ticks):
+        EnemyShip.update(self, ticks)
+        self.movetimer.update(ticks)
+
         
-        if not self.attacking and random.randint(1,30) == 5:
-            self.attack()
+        if not self.attacking and random.randint(1, 50) == 5: self.attack()
             
         if self.attacking:
             if self.anim.dead:
-                self.attacking=False
-                self.switch_anim(c1.Animation(*self.normal))
+                self.attacking = False
+                self.switch_anim(c1.Animation(*self.normal_anim))
         
     def attack(self):
-        self.attacking=True
+        self.attacking = True
         self.switch_anim(c1.Animation(*self.attack_anim))
-        
 
 
 if __name__ == "__main__":
     print "Testing"
     pygame.init()
-    display=pygame.display.set_mode((600,200))
-    background,_=load_image('images/background.png')
-    background=background.convert()
-    display.blit(background,(0,0))
+    display = pygame.display.set_mode((600,480))
+    pygame.display.set_caption("Mouse click!, press a key to exit")
+    background, _ = load_image('images/background.png')
+    background = background.convert()
+    display.blit(background, (0,0))
     pygame.display.flip()
     
-    dg=c1.DrawGroup()
-    baddies=Squid([0,0])
-    baddies.add(dg)
-        
-    x=pygame.time.Clock()
+    squid = c1.DrawGroup()
+    Squid.containers = squid
+       
+    x = pygame.time.Clock()
     
     while 1:
-        pygame.event.pump()
-        ticks=x.tick(40)
+        for event in pygame.event.get():
+            if event.type == MOUSEBUTTONDOWN:
+                Squid(pygame.mouse.get_pos())
+            elif event.type == KEYDOWN:
+                pygame.quit()
+                sys.exit()
+        ticks = x.tick(40)
         print ticks
-        dg.clear(display,background)
-        dg.update(ticks)
-        dg.draw(display)
+        squid.clear(display, background)
+        squid.update(ticks)
+        squid.draw(display)
         pygame.display.flip()

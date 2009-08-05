@@ -20,7 +20,6 @@
 #       MA 02110-1301, USA.
 
 
-import time
 import os
 import sys
 
@@ -32,7 +31,7 @@ from const import *
 
 class DrawGroup(pygame.sprite.Group):
     """Modified versions of draw and clear."""
-    def __init__(self,*sprites):
+    def __init__(self, *sprites):
         pygame.sprite.Group.__init__(self)
         self.add(*sprites)
         
@@ -50,12 +49,12 @@ class DrawGroup(pygame.sprite.Group):
         This will come in handy when doing animations."""
            
         sprites = self.sprites()
-        for i in sprites:
-            if i.visible:
-                self.spritedict[i]=surface.blit(i.image,i.rect,i.drawrect)
+        for spr in sprites:
+            if spr.visible:
+                self.spritedict[spr] = surface.blit(spr.image,spr.rect,spr.drawrect)
         self.lostsprites = []
 
-    def clear(self,surface,bgd):
+    def clear(self, surface, bgd):
         """clear(surface, bgd)
            erase the previous position of all sprites
 
@@ -63,141 +62,170 @@ class DrawGroup(pygame.sprite.Group):
            The bgd argument should be a Surface which has the same
            dimensions as the surface."""
 
-        for i in self.lostsprites:
-            surface.blit(bgd,i,i)
-        for i in self.spritedict.values():
-            if i is not 0:
-                surface.blit(bgd,i,i)
+        for spr in self.lostsprites:
+            surface.blit(bgd, spr, spr)
+        for spr in self.spritedict.values():
+            if spr is not 0:
+                surface.blit(bgd, spr, spr)
+
         
 
-class MySprite(pygame.sprite.DirtySprite):
-    """Base class for my sprites
+class SimpleSprite(pygame.sprite.DirtySprite):
+    """
+    A simple sprite class.
+    
+    When inheriting from this class, you will have to make sure
+    image, drawrect, and rect, are already in the object
+    """
+    containers=[]
+    def __init__(self, spos, vector):
+        self.rect.topleft=spos
+        self.vector = vector
+        pygame.sprite.DirtySprite.__init__(self, self.containers)
+        
+    def update(self,ticks): pass
+        
+    def move(self, pos):
+        self.rect.topleft = pos
+
+    def moverel(self, offset):
+        self.rect.move_ip(offset)        
+
+
+        
+class AnimSprite(pygame.sprite.DirtySprite):
+    """Base class for various classes
     Handles anims quite well..."""
-    def __init__(self,anim,spos,vector):
-        self.anim=anim
-        self.image=anim.image
-        self.anim.rect.topleft=spos
-        self.rect=self.anim.rect
-        self.drawrect=self.anim.drawrect
-        self.vector=vector
+    containers=[]
+    def __init__(self, anim, spos, vector):
+        self.anim = anim
+        self.image = anim.image
+        self.anim.rect.topleft = spos
+        self.rect = self.anim.rect
+        self.drawrect = self.anim.drawrect
+        self.vector = vector
         
-        pygame.sprite.DirtySprite.__init__(self)
+        pygame.sprite.DirtySprite.__init__(self, self.containers)
         
-    def update(self,ticks):
+    def update(self, ticks):
         if self.anim.dirty:
-            self.rect=self.anim.rect
-            self.drawrect=self.anim.drawrect
+            self.rect = self.anim.rect
+            self.drawrect = self.anim.drawrect
         self.anim.update(ticks)
         
-    def switch_anim(self,newanim):
-        spos=self.rect.topleft
-        self.anim=newanim
-        self.image=self.anim.image
-        self.anim.rect.topleft=spos
-        self.rect=self.anim.rect
-        self.drawrect=self.anim.drawrect
+    def switch_anim(self, newanim):
+        pos = self.rect.topleft
+        self.anim = newanim
+        self.image = self.anim.image
+        self.anim.rect.move_ip(pos)
+        self.rect = self.anim.rect
+        self.drawrect = self.anim.drawrect
         
-    def move(self,pos):
-        self.rect.topleft=pos
-        self.anim.rect.topleft=pos
+    def move(self, pos):
+        self.rect.topleft = pos
+        self.anim.move(pos)
 
-    def moverel(self,offset):
+    def moverel(self, offset):
         self.rect.move_ip(offset)
         self.anim.move(self.rect.topleft)
         
     
 
 class Animation:
-    def __init__(self,image,rect,step,time,spos,startframe=0,onceoff=False):
+    def __init__(self, data, spos, sframe=0, eframe=None, onceoff=False):
         """
         Class to animate an image.
-        image: a pygame image object
-        step: how far to go across
-        time: how often to change images
-        startframe: the frame to start at, this may be useful...
-        onceoff: stop animating when we reach the end of the sequence"""
-        self.dirty=1
-        self.dead=False
-        self.onceoff=onceoff
-        self.image=image
-        self.rect=Rect(spos,(step,rect.bottom))
-        self.rect.topleft=spos
-        self.spos=spos
-        self.animlength=rect.right
-        self.step=step
-        self.startframe=step*startframe
-        self.timer=Timer(time,self.next)
-        self.drawrect=pygame.Rect([self.startframe,0],(self.step,self.rect.bottom))
+        data: a list, [image, time, frames]
+              as returned by utils.load_anim
+        sframe: the frame to start at.
+        eframe: the frame to end at.
+        onceoff: stop animating when we reach the end of the sequence
+
+        """
+        
+        self.dirty = 1
+        self.dead = False
+        self.onceoff = onceoff
+
+        self.image, time, self.frames = data
+        
+        self.sframe = sframe
+        self.index=self.sframe
+        if eframe == None: self.len = len(self.frames)
+        else: self.len = eframe + 1
+        self.drawrect = self.frames[self.index]
+        self.rect = self.drawrect.move(spos)
+
+        self.timer = Timer(time, self.next)
+        
         
     def next(self):
         """Go to the next image in the animation."""
+        if self.dead: return False
         
-        if self.dead:return False
-        #Calculate the newrect
-        newrect=self.drawrect.move((self.step,0))
-        #We have to subtract the offset from the rectangle
-        #in order to account for the offset.
-        if newrect.topleft[0] >= self.animlength:
-            #If we are a one off (eg. an explosion) then we can die now.
-            if self.onceoff:
-                self.dead=True
-            #Otherwise return to the beginning of the animation sequence
-            else:
-                newrect=pygame.Rect([self.startframe,0],(self.step,self.rect.bottom))
-        
-        self.drawrect=newrect
-        
-        self.dirty=True
+        if not self.onceoff: self.index = (self.index+1) % self.len
+        else:
+            if self.index == self.len - 1: self.dead = True
+            else: self.index+=1
+            
+        self.drawrect = self.frames[self.index]
+        self.rect = self.drawrect.move(self.rect.topleft)
+        self.dirty = True
         return True
         
-    def move(self,newpos):
+    def move(self, newpos):
         """Move the animation to a new position.
         newpos: a [x,y] of the new coordinates"""
+        self.rect.topleft = newpos
         
-        self.rect.topleft=newpos
-        self.spos=newpos
-        
-    def update(self,ticks):
+    def update(self, ticks):
         """Call this every loop to update the timer.
         Return False if dead, True if alive."""
         
         self.timer.update(ticks)
-        if self.dead:return False
+        if self.dead: return False
         return True
-            
-    
+
+
 if __name__ == "__main__":
+    #Initialize the display and background
     pygame.init()
-    display=pygame.display.set_mode((800,200))
-    background,_=load_image('images/background.png')
-    display.blit(background,(0,0))
+    display = pygame.display.set_mode((400,400))
+    background, _ = load_image('images/background.png')
+    display.blit(background, (0,0))
     pygame.display.flip()
+
+    #Prepare the animations
+    anim = Animation(load_anim('images/BlackEagle/ship.anim'), [0,0])
+    explosion = Animation(load_anim('images/effects/explo.anim'), [20,20], onceoff=True)
+
+    #Create the ship
+    ship = AnimSprite(anim, [0,20], [1,1])
+    #Add it to the drawgroup
     
-    image,rect=load_image('images/BlackEagle/normal.png')
-    anim=Animation(image,rect,97,400,[000,000])
-    explo1,explo1rect=load_image('images/explosions/explosion-1.png')
-    explosion=Animation(explo1,explo1rect,64,40,[20,20],True)
-    ship=MySprite(anim,[50,20],[1,1])
-    dg=DrawGroup(ship)
-    x=pygame.time.Clock()
-    d=6
+    dg = DrawGroup(ship)
+    #Start the clock
+    x = pygame.time.Clock()
+
+    #This is the ships speed
+    v = [2,2]
+      
     while 1:
         for i in pygame.event.get():
             if i.type == QUIT:
                 pygame.quit()
                 sys.exit()
-        #display.blit(background,anim.rect,anim.rect)
-        #display.blit(anim.image,anim.rect,anim.drawrect)
-        #print "BLITTIED IT@",anim.rect.topleft
-        #print "This much:",anim.drawrect
-        ticks=x.tick(40)
-        dg.clear(display,background)
+        ticks = x.tick(40)
+        dg.clear(display, background)
         dg.update(ticks)
         dg.draw(display)
-        ship.moverel([d,0])
-        if ship.rect.right > 800 or ship.rect.left < 0:
-            ship.switch_anim(explosion)
-            d=-d
-        if ship.anim.dead:ship.kill()
+        ship.moverel(v)
+        
+        if ship.rect.right > 400 or ship.rect.left < 0:
+            #ship.switch_anim(explosion)
+            v[0] = -v[0]
+        if ship.rect.top < 0 or ship.rect.bottom > 400:
+            v[1] = -v[1]
+        if ship.anim.dead: ship.kill()
         pygame.display.flip()
         

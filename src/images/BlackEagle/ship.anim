@@ -1,0 +1,8 @@
+#Path to the image to use.
+img=ship-97.png
+#time (in milliseconds) (supposedly) of each frame
+#You might need to tweak this value
+time=400
+#The dimensions of each frame
+1=0,97;0,110
+2=97,194;0,110

@@ -1,0 +1,13 @@
+#Path to the image to use.
+image=squidanim.png
+#time (in milliseconds) (supposedly) of each frame
+#You might need to tweak this value
+time=70
+#The dimensions of each frame
+#Normal frame
+1=0,23;0,120
+#Beginning of attack frames
+2=23,80;0,120
+3=80,137;0,141
+4=137,194;0,187
+5=194,251;0,207
